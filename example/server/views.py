@@ -3,14 +3,32 @@ from django.http import HttpResponse
 from django.conf import settings
 
 import opentracing
+import requests
+from py_zipkin.zipkin import zipkin_span
 
 # Create your views here.
+
+def http_transport(encoded_span):
+    # The collector expects a thrift-encoded list of spans. Instead of
+    # decoding and re-encoding the already thrift-encoded message, we can just
+    # add header bytes that specify that what follows is a list of length 1.
+    body = encoded_span
+    # body = '\x0c\x00\x00\x00\x01' + encoded_span
+    print(body)
+    requests.post(
+        'http://localhost:9412/api/v1/spans',
+        data=body,
+        headers={'Content-Type': 'application/x-thrift'},
+    )
 
 def server_index(request):
     return HttpResponse("Hello, world. You're at the server index.")
 
 def server_simple(request):
-    return HttpResponse("This is a simple traced request.")
+    try:
+        return HttpResponse("This is a simple traced request.")
+    except Exception as e:
+        print(e)
 
 def server_log(request):
     span = settings.OPENTRACING_TRACER.get_span(request)

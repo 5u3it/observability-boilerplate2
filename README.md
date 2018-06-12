@@ -1,2 +1,7 @@
-# opentracing-python-django-jaeger-example
-Example project for configuring Jaeger opentracing with python-django
+# Observability Boilerplate #2
+An observability boilerplate comprising of metrics and tracing aggregation.
+Application: Python Django
+Metrics: Prometheus
+Metrics Dashboarding: Grafana
+Tracing: Opentracing | Zipkin
+Tracing (OpenTracing) Dashboarding: Jaeger

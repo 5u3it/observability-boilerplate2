@@ -1,3 +1,6 @@
 django==1.9.0
-git+https://github.com/ocadotechnology/python-django.git@fixes#egg=django_opentracing
+#git+https://github.com/ocadotechnology/python-django.git@fixes#egg=django_opentracing
 jaeger-client
+py-zipkin
+requests
+django-prometheus

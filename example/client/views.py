@@ -4,22 +4,67 @@ from django.shortcuts import render
 
 import opentracing
 import urllib2
+import requests
+from py_zipkin.zipkin import zipkin_span, ZipkinAttrs
+# from py_zipkin.transport import BaseTransportHandler 
 
 # Create your views here.
+
+def http_transport(encoded_span):
+    # The collector expects a thrift-encoded list of spans. Instead of
+    # decoding and re-encoding the already thrift-encoded message, we can just
+    # add header bytes that specify that what follows is a list of length 1.
+    body = encoded_span
+    # body = '\x0c\x00\x00\x00\x01' + encoded_span
+    print(body)
+    requests.post(
+        'http://localhost:9412/api/v1/spans',
+        data=body,
+        headers={'Content-Type': 'application/x-thrift'},
+    )
 
 def client_index(request):
     return HttpResponse("Client index page")
 
+# @zipkin_span(service_name='ssm_zipkin', span_name='client_simple')
 def client_simple(request):
-    url = "http://localhost:8000/server/simple"
-    new_request = urllib2.Request(url)
-    current_span = settings.OPENTRACING_TRACER.get_span(request)
-    inject_as_headers(settings.OPENTRACING_TRACER, current_span, new_request)
-    try:
-        response = urllib2.urlopen(new_request)
-        return HttpResponse("Made a simple request")
-    except urllib2.URLError as e:
-        return HttpResponse("Error: " + str(e))
+    zipkin_attrs1 = ZipkinAttrs(
+        trace_id='1',
+        span_id='1',
+        parent_span_id=None,
+        flags='0',
+        is_sampled=True,
+    )
+    with zipkin_span(
+        zipkin_attrs=zipkin_attrs1,
+        service_name='ssmzipkin2',
+        span_name='clientsimple1',
+        transport_handler=http_transport,
+        sample_rate=100, # Value between 0.0 and 100.0
+    ) as clientspan:
+        url = "http://localhost:8000/server/simple"
+        new_request = urllib2.Request(url)
+        current_span = settings.OPENTRACING_TRACER.get_span(request)
+        inject_as_headers(settings.OPENTRACING_TRACER, current_span, new_request)
+        zipkin_attrs = ZipkinAttrs(
+            trace_id='1',
+            span_id='2',
+            parent_span_id='1',
+            flags='0',
+            is_sampled=True,
+        )
+        try:
+            with zipkin_span(
+                zipkin_attrs= zipkin_attrs,
+                service_name='ssmzipkin2',
+                span_name='serversimple1',
+                transport_handler=http_transport,
+                sample_rate=100, # Value between 0.0 and 100.0
+            ) as childspan:
+                response = urllib2.urlopen(new_request)
+                return HttpResponse("Made a simple request")
+        except urllib2.URLError as e:
+            return HttpResponse("Error: " + str(e))
 
 def client_log(request):
     url = "http://localhost:8000/server/log"

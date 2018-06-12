@@ -22,5 +22,6 @@ urlpatterns = [
     url(r'^$', views.index),
     url(r'^admin/', admin.site.urls),
     url(r'^server/', include('server.urls')),
-    url(r'^client/', include('client.urls'))
+    url(r'^client/', include('client.urls')),
+    url('', include('django_prometheus.urls')),
 ]
